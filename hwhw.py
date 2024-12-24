@@ -106,3 +106,24 @@ plt.xlabel('PCA Component 1')
 plt.ylabel('PCA Component 2')
 plt.legend()
 plt.show()
+
+# GMM 클러스터링 : 데이터에 GMM을 적용
+gmm = GaussianMixture(n_components=4, covariance_type='full', random_state=0)
+y_gmm = gmm.fit_predict(scaled_data)
+
+# 실루엣 점수를 사용하여 클러스터링 성능 평가
+silhouette_kmeans = silhouette_score(scaled_data, y_kmeans)
+silhouette_dbscan = silhouette_score(scaled_data, y_dbscan) if len(set(y_dbscan)) > 1 else -1
+silhouette_gmm = silhouette_score(scaled_data, y_gmm)
+
+# 결과 출력
+print(f"K-means 실루엣 점수: {silhouette_kmeans}")
+print(f"DBSCAN 실루엣 점수: {silhouette_dbscan}")
+print(f"GMM 실루엣 점수: {silhouette_gmm}")
+
+# 시계열 분석 추가 (Prophet 모델)
+df['Year'] = 2020  # 모든 데이터를 2020년으로 설정 (예시)
+df_monthly = df.groupby('Year').agg({'Spending Score (1-100)': 'mean'}).reset_index()
+
+# 결측값 처리 (필요 시): Prophet 모델은 결측값을 처리해야 하므로 결측값을 제거
+df_monthly = df_monthly.dropna()  # 결측값이 있는 행 제거
