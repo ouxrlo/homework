@@ -89,4 +89,14 @@ metrics = {
 for model_name, (mae, mse, r2) in metrics.items():
     print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
 
+# 성능 지표를 데이터프레임으로 정리
+metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
+
+# 시각화
+plt.figure(figsize=(12, 6))
+metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
+plt.title('Model Performance Comparison')
+plt.ylabel('Score')
+plt.xticks(rotation=0)
+plt.show()
 
