@@ -5,89 +5,54 @@
 # conda install pandas numpy xgboost scikit-learn matplotlib seaborn
 
 
-# 라이브러리 임포트
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LinearRegression
-from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import matplotlib.pyplot as plt
-import seaborn as sns
 
-# 데이터 로드
+# 주택 데이터 로드
 file_path = '/Users/t2023-m0093/Desktop/homework/hw1/housingdata.csv'
 housing_data = pd.read_csv(file_path)
 
-# 데이터 확인 (상위 5개 행과 기본 정보)
-print(housing_data.head())
-print(housing_data.info())
-print(housing_data.describe())
+# 주어진 데이터셋에는 날짜 정보가 없으므로, 임의로 'YEAR'와 'SEASON'을 추가합니다.
+# 예시로 'YEAR'를 2024년으로 설정하고, 'SEASON'을 월(MONTH) 기준으로 분류합니다.
+# 실제 데이터에는 연도 정보가 없다면 외부 경제 데이터를 활용하거나 월 기준으로 가정할 수 있습니다.
 
-# 결측치 확인 및 제거
-print(housing_data.isnull().sum())  # 결측치 개수 확인
-housing_data = housing_data.dropna()  # 결측치가 있는 행 제거
+# 예시로 연도 컬럼을 추가 (임의로 2024년으로 설정)
+housing_data['YEAR'] = 2024  # 실제 연도에 맞게 수정 필요
+housing_data['MONTH'] = 1  # 월 정보가 없다면 임의로 1월로 설정
 
-# 이상치 탐지 및 제거 (RM 열을 기준으로)
-plt.figure(figsize=(10, 6))
-sns.boxplot(data=housing_data, x='RM')
-plt.title('RM Boxplot')
-plt.show()
+# 계절성 변수 추가 (봄, 여름, 가을, 겨울)
+housing_data['SEASON'] = housing_data['MONTH'].apply(lambda x: 'Winter' if x in [12, 1, 2] 
+                                                     else ('Spring' if x in [3, 4, 5] 
+                                                           else ('Summer' if x in [6, 7, 8] 
+                                                                 else 'Fall')))
 
-# IQR 방법을 사용하여 RM 열의 이상치 제거 (완화된 방법)
-Q1 = housing_data['RM'].quantile(0.25)
-Q3 = housing_data['RM'].quantile(0.75)
-IQR = Q3 - Q1
-# 이상치를 너무 많이 제거하지 않도록 제한 (예시로 RM 값을 3과 10으로 클리핑)
-housing_data['RM'] = housing_data['RM'].clip(lower=3, upper=10)
-
-# 특성 엔지니어링: 새로운 특성 추가 (RM과 LSTAT의 곱, AGE의 제곱)
-housing_data['RM_LSTAT'] = housing_data['RM'] * housing_data['LSTAT']
-housing_data['AGE_SQ'] = housing_data['AGE'] ** 2
-
-# 목표 변수 MEDV에 로그 변환 적용 (정규화 효과)
-housing_data['MEDV'] = np.log1p(housing_data['MEDV'])
-
-# 특징(X)과 목표 변수(y) 분리
-X = housing_data[['RM', 'LSTAT', 'PTRATIO', 'AGE', 'RM_LSTAT', 'AGE_SQ']]
+# 특성(X)와 목표 변수(y) 분리
+X = housing_data[['CRIM', 'ZN', 'INDUS', 'CHAS', 'NOX', 'RM', 'AGE', 'DIS', 'RAD', 'TAX', 'PTRATIO', 'B', 'YEAR', 'SEASON']]
 y = housing_data['MEDV']
 
-# 데이터 분할: 훈련 데이터(90%)와 테스트 데이터(10%)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)  # test_size를 0.1로 설정
+# 범주형 변수(계절)를 더미 변수로 변환
+X = pd.get_dummies(X, columns=['SEASON'], drop_first=True)
 
-# 데이터 스케일링 (StandardScaler 사용)
+# 데이터 분할: 훈련 데이터(90%)와 테스트 데이터(10%)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+
+# 데이터 스케일링
 scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
-# 모델 초기화
-lin_reg = LinearRegression()
-tree_reg = DecisionTreeRegressor(random_state=42)
-forest_reg = RandomForestRegressor(n_estimators=100, random_state=42)
-
-# 하이퍼파라미터 튜닝을 위한 그리드 서치 설정 (Random Forest 모델)
-param_grid = {
-    'n_estimators': [100, 200, 300],  # 트리의 개수
-    'max_depth': [10, 20, None],  # 트리의 최대 깊이
-    'min_samples_split': [2, 5, 10],  # 분할을 위한 최소 샘플 수
-    'min_samples_leaf': [1, 2, 4]  # 리프 노드에서 최소 샘플 수
-}
-
-# 그리드 서치로 모델 최적화 (교차 검증 사용)
-grid_search = GridSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error')
-grid_search.fit(X_train_scaled, y_train)
-
-# 최적의 파라미터 출력
-print("Best Parameters:", grid_search.best_params_)
-
-# 최적화된 모델로 예측
-best_forest_reg = grid_search.best_estimator_
+# 모델 학습 (Random Forest 모델 사용)
+model = RandomForestRegressor(n_estimators=100, random_state=42)
+model.fit(X_train_scaled, y_train)
 
 # 예측
-y_train_pred_forest = best_forest_reg.predict(X_train_scaled)
-y_test_pred_forest = best_forest_reg.predict(X_test_scaled)
+y_train_pred = model.predict(X_train_scaled)
+y_test_pred = model.predict(X_test_scaled)
 
 # 성능 평가 함수 정의
 def evaluate_model(y_true, y_pred):
@@ -97,76 +62,16 @@ def evaluate_model(y_true, y_pred):
     return mae, mse, r2
 
 # 성능 평가
-metrics = {
-    'Random Forest (Optimized)': evaluate_model(y_test, y_test_pred_forest)
-}
+metrics = evaluate_model(y_test, y_test_pred)
+print(f"MAE: {metrics[0]}, MSE: {metrics[1]}, R²: {metrics[2]}")
 
-# 성능 지표 출력
-for model_name, (mae, mse, r2) in metrics.items():
-    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
-
-# 모델 학습
-lin_reg.fit(X_train_scaled, y_train)
-tree_reg.fit(X_train_scaled, y_train)
-forest_reg.fit(X_train_scaled, y_train)
-
-# 예측
-y_train_pred_lin = lin_reg.predict(X_train_scaled)
-y_test_pred_lin = lin_reg.predict(X_test_scaled)
-
-y_train_pred_tree = tree_reg.predict(X_train_scaled)
-y_test_pred_tree = tree_reg.predict(X_test_scaled)
-
-y_train_pred_forest = forest_reg.predict(X_train_scaled)
-y_test_pred_forest = forest_reg.predict(X_test_scaled)
-
-# Random Forest 모델에서 특성 중요도 추출
-feature_importances = best_forest_reg.feature_importances_
-
-# 중요도를 데이터프레임으로 변환
-features = X.columns
-importance_df = pd.DataFrame({
-    'Feature': features,
-    'Importance': feature_importances
-}).sort_values(by='Importance', ascending=False)
-
-# 특성 중요도 시각화
-plt.figure(figsize=(10, 6))  # figsize 수정
-sns.barplot(x='Importance', y='Feature', data=importance_df)
-plt.title('Feature Importance - Random Forest')
-plt.show()
-
-# 예측값과 실제값 비교 시각화 (Random Forest)
-plt.figure(figsize=(10, 6))  # figsize 수정
-plt.scatter(y_test, y_test_pred_forest, color='blue', label='Predicted', alpha=0.5)
-plt.scatter(y_test, y_test, color='red', label='Actual', alpha=0.5)
+# 예측값과 실제값 비교 시각화
+plt.scatter(y_test, y_test_pred)
 plt.xlabel('Actual Prices')
 plt.ylabel('Predicted Prices')
-plt.title('Actual vs Predicted Prices - Random Forest')
-plt.legend()
+plt.title('Actual vs Predicted Prices')
 plt.show()
 
-# 성능 평가
-metrics = {
-    'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
-    'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
-    'Random Forest': evaluate_model(y_test, y_test_pred_forest)
-}
-
-# 성능 지표 출력
-for model_name, (mae, mse, r2) in metrics.items():
-    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
-
-# 성능 지표를 데이터프레임으로 정리
-metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
-
-# 성능 비교 시각화
-plt.figure(figsize=(12, 6))  # figsize 수정
-metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
-plt.title('Model Performance Comparison')
-plt.ylabel('Score')
-plt.xticks(rotation=0)
-plt.show()
 
 
 
