@@ -4,12 +4,6 @@
 # conda install pandas numpy xgboost scikit-learn matplotlib seaborn
 
 # 성능 평가 함수 정의
-def evaluate_model(y_true, y_pred):
-    mae = mean_absolute_error(y_true, y_pred)
-    mse = mean_squared_error(y_true, y_pred)
-    r2 = r2_score(y_true, y_pred)
-    return mae, mse, r2
-
 # 라이브러리 임포트
 import pandas as pd
 import numpy as np
@@ -21,7 +15,25 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-from xgboost import XGBRegressor  # XGBoost 모델 추가
+from scipy import stats
+
+# 이상치 탐지 및 제거 (IQR + Z-Score 방법)
+def remove_outliers_iqr(df, columns):
+    cleaned_df = df.copy()
+    for col in columns:
+        Q1 = cleaned_df[col].quantile(0.25)
+        Q3 = cleaned_df[col].quantile(0.75)
+        IQR = Q3 - Q1
+        lower_bound = Q1 - 1.5 * IQR
+        upper_bound = Q3 + 1.5 * IQR
+        cleaned_df = cleaned_df[(cleaned_df[col] >= lower_bound) & (cleaned_df[col] <= upper_bound)]
+    return cleaned_df
+
+def remove_outliers_zscore(df, columns, threshold=3):
+    cleaned_df = df.copy()
+    z_scores = np.abs(stats.zscore(cleaned_df[columns]))
+    cleaned_df = cleaned_df[(z_scores < threshold).all(axis=1)]  # 모든 열에서 Z-score가 threshold를 넘지 않는 행만 남김
+    return cleaned_df
 
 # 데이터 로드
 file_path = '/Users/t2023-m0093/Desktop/homework/hw1/housingdata.csv'
@@ -36,18 +48,30 @@ print(housing_data.describe())
 print(housing_data.isnull().sum())  # 결측치 개수 확인
 housing_data = housing_data.dropna()  # 결측치가 있는 행 제거
 
-# 이상치 탐지 및 제거 (RM 열을 기준으로)
+# 이상치 탐지 및 제거 (IQR + Z-Score 방법)
+numeric_columns = housing_data.select_dtypes(include=[np.number]).columns
+
+# IQR 방법을 사용하여 이상치 제거
+housing_data_iqr = remove_outliers_iqr(housing_data, numeric_columns)
+print(f"데이터 크기(IQR 방법 후): {housing_data_iqr.shape}")
+
+# Z-Score 방법을 사용하여 이상치 제거
+housing_data_zscore = remove_outliers_zscore(housing_data_iqr, numeric_columns)
+print(f"데이터 크기(Z-Score 방법 후): {housing_data_zscore.shape}")
+
+# 이상치가 제거된 데이터로 후속 작업 진행
+housing_data = housing_data_zscore
+
+# 데이터 확인 (상위 5개 행과 기본 정보)
+print(housing_data.head())
+print(housing_data.info())
+print(housing_data.describe())
+
+# 그래프를 사용해 이상치 제거 후 분포 확인
 plt.figure(figsize=(10, 6))
 sns.boxplot(data=housing_data, x='RM')
-plt.title('RM Boxplot')
+plt.title('RM Boxplot - After Outlier Removal')
 plt.show()
-
-# IQR 방법을 사용하여 RM 열의 이상치 제거
-Q1 = housing_data['RM'].quantile(0.25)
-Q3 = housing_data['RM'].quantile(0.75)
-IQR = Q3 - Q1
-rm_outliers = housing_data[(housing_data['RM'] < (Q1 - 1.5 * IQR)) | (housing_data['RM'] > (Q3 + 1.5 * IQR))]
-housing_data = housing_data.drop(rm_outliers.index)
 
 # 특성 엔지니어링: 새로운 특성 추가 (RM과 LSTAT의 곱, AGE의 제곱)
 housing_data['RM_LSTAT'] = housing_data['RM'] * housing_data['LSTAT']
@@ -72,7 +96,6 @@ X_test_scaled = scaler.transform(X_test)
 lin_reg = LinearRegression()
 tree_reg = DecisionTreeRegressor(random_state=42)
 forest_reg = RandomForestRegressor(n_estimators=100, random_state=42)
-xg_reg = XGBRegressor(random_state=42)  # XGBoost 모델 초기화
 
 # 하이퍼파라미터 튜닝을 위한 그리드 서치 설정 (Random Forest 모델)
 param_grid = {
@@ -103,13 +126,21 @@ def evaluate_model(y_true, y_pred):
     r2 = r2_score(y_true, y_pred)
     return mae, mse, r2
 
+# 성능 평가
+metrics = {
+    'Random Forest (Optimized)': evaluate_model(y_test, y_test_pred_forest)
+}
+
+# 성능 지표 출력
+for model_name, (mae, mse, r2) in metrics.items():
+    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
+
 # 모델 학습
 lin_reg.fit(X_train_scaled, y_train)
 tree_reg.fit(X_train_scaled, y_train)
 forest_reg.fit(X_train_scaled, y_train)
-xg_reg.fit(X_train_scaled, y_train)  # XGBoost 모델 학습
 
-# 예측 (각 모델에 대해 예측값 계산)
+# 예측
 y_train_pred_lin = lin_reg.predict(X_train_scaled)
 y_test_pred_lin = lin_reg.predict(X_test_scaled)
 
@@ -118,32 +149,6 @@ y_test_pred_tree = tree_reg.predict(X_test_scaled)
 
 y_train_pred_forest = forest_reg.predict(X_train_scaled)
 y_test_pred_forest = forest_reg.predict(X_test_scaled)
-
-y_train_pred_xg = xg_reg.predict(X_train_scaled)
-y_test_pred_xg = xg_reg.predict(X_test_scaled)
-
-# 성능 평가
-metrics = {
-    'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
-    'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
-    'Random Forest': evaluate_model(y_test, y_test_pred_forest),
-    'XGBoost': evaluate_model(y_test, y_test_pred_xg)
-}
-
-# 성능 지표 출력
-for model_name, (mae, mse, r2) in metrics.items():
-    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
-
-# 성능 지표를 데이터프레임으로 정리
-metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
-
-# 성능 비교 시각화
-plt.figure(figsize=(12, 6))
-metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
-plt.title('Model Performance Comparison')
-plt.ylabel('Score')
-plt.xticks(rotation=0)
-plt.show()
 
 # Random Forest 모델에서 특성 중요도 추출
 feature_importances = best_forest_reg.feature_importances_
@@ -170,6 +175,29 @@ plt.ylabel('Predicted Prices')
 plt.title('Actual vs Predicted Prices - Random Forest')
 plt.legend()
 plt.show()
+
+# 성능 평가
+metrics = {
+    'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
+    'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
+    'Random Forest': evaluate_model(y_test, y_test_pred_forest)
+}
+
+# 성능 지표 출력
+for model_name, (mae, mse, r2) in metrics.items():
+    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
+
+# 성능 지표를 데이터프레임으로 정리
+metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
+
+# 성능 비교 시각화
+plt.figure(figsize=(12, 6))
+metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
+plt.title('Model Performance Comparison')
+plt.ylabel('Score')
+plt.xticks(rotation=0)
+plt.show()
+
 
 
 
