@@ -40,6 +40,13 @@ IQR = Q3 - Q1
 rm_outliers = housing_data[(housing_data['RM'] < (Q1 - 1.5 * IQR)) | (housing_data['RM'] > (Q3 + 1.5 * IQR))]
 housing_data = housing_data.drop(rm_outliers.index)
 
+# 특성 엔지니어링: 새로운 특성 추가
+housing_data['RM_LSTAT'] = housing_data['RM'] * housing_data['LSTAT']  # RM과 LSTAT의 곱
+housing_data['AGE_SQ'] = housing_data['AGE'] ** 2  # AGE의 제곱
+
+# 목표 변수 MEDV에 로그 변환 적용
+housing_data['MEDV'] = np.log1p(housing_data['MEDV'])
+
 # 특징과 타겟 변수 분리
 X = housing_data[['RM', 'LSTAT', 'PTRATIO', 'AGE']]
 y = housing_data['MEDV']
