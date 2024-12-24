@@ -16,32 +16,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-from scipy import stats
-
-# 이상치 탐지 및 제거 (IQR + Z-Score 방법)
-def remove_outliers_iqr(df, columns):
-    cleaned_df = df.copy()
-    for col in columns:
-        Q1 = cleaned_df[col].quantile(0.25)
-        Q3 = cleaned_df[col].quantile(0.75)
-        IQR = Q3 - Q1
-        lower_bound = Q1 - 1.5 * IQR
-        upper_bound = Q3 + 1.5 * IQR
-        cleaned_df = cleaned_df[(cleaned_df[col] >= lower_bound) & (cleaned_df[col] <= upper_bound)]
-    return cleaned_df
-
-def remove_outliers_zscore(df, columns, threshold=3):
-    cleaned_df = df.copy()
-    z_scores = np.abs(stats.zscore(cleaned_df[columns]))
-    cleaned_df = cleaned_df[(z_scores < threshold).all(axis=1)]  # 모든 열에서 Z-score가 threshold를 넘지 않는 행만 남김
-    return cleaned_df
 
 # 데이터 로드
 file_path = '/Users/t2023-m0093/Desktop/homework/hw1/housingdata.csv'
 housing_data = pd.read_csv(file_path)
 
 # 데이터 확인 (상위 5개 행과 기본 정보)
-print("Original Data Shape:", housing_data.shape)
 print(housing_data.head())
 print(housing_data.info())
 print(housing_data.describe())
@@ -50,31 +30,18 @@ print(housing_data.describe())
 print(housing_data.isnull().sum())  # 결측치 개수 확인
 housing_data = housing_data.dropna()  # 결측치가 있는 행 제거
 
-# 이상치 탐지 및 제거 (IQR + Z-Score 방법)
-numeric_columns = housing_data.select_dtypes(include=[np.number]).columns
-
-# IQR 방법을 사용하여 이상치 제거
-housing_data_iqr = remove_outliers_iqr(housing_data, numeric_columns)
-print(f"Data Shape After IQR Outlier Removal: {housing_data_iqr.shape}")
-
-# Z-Score 방법을 사용하여 이상치 제거
-housing_data_zscore = remove_outliers_zscore(housing_data_iqr, numeric_columns)
-print(f"Data Shape After Z-Score Outlier Removal: {housing_data_zscore.shape}")
-
-# 이상치가 제거된 데이터로 후속 작업 진행
-housing_data = housing_data_zscore
-
-# 데이터 확인 (상위 5개 행과 기본 정보)
-print("Data Shape After Outlier Removal:", housing_data.shape)
-print(housing_data.head())
-print(housing_data.info())
-print(housing_data.describe())
-
-# 그래프를 사용해 이상치 제거 후 분포 확인
+# 이상치 탐지 및 제거 (RM 열을 기준으로)
 plt.figure(figsize=(10, 6))
 sns.boxplot(data=housing_data, x='RM')
-plt.title('RM Boxplot - After Outlier Removal')
+plt.title('RM Boxplot')
 plt.show()
+
+# IQR 방법을 사용하여 RM 열의 이상치 제거 (완화된 방법)
+Q1 = housing_data['RM'].quantile(0.25)
+Q3 = housing_data['RM'].quantile(0.75)
+IQR = Q3 - Q1
+# 이상치를 너무 많이 제거하지 않도록 제한 (예시로 RM 값을 3과 10으로 클리핑)
+housing_data['RM'] = housing_data['RM'].clip(lower=3, upper=10)
 
 # 특성 엔지니어링: 새로운 특성 추가 (RM과 LSTAT의 곱, AGE의 제곱)
 housing_data['RM_LSTAT'] = housing_data['RM'] * housing_data['LSTAT']
@@ -87,9 +54,8 @@ housing_data['MEDV'] = np.log1p(housing_data['MEDV'])
 X = housing_data[['RM', 'LSTAT', 'PTRATIO', 'AGE', 'RM_LSTAT', 'AGE_SQ']]
 y = housing_data['MEDV']
 
-# 데이터 분할: 훈련 데이터(80%)와 테스트 데이터(20%)
-# 만약 데이터셋이 너무 작다면, test_size를 0.1로 변경
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+# 데이터 분할: 훈련 데이터(90%)와 테스트 데이터(10%)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)  # test_size를 0.1로 설정
 
 # 데이터 스케일링 (StandardScaler 사용)
 scaler = StandardScaler()
@@ -201,6 +167,7 @@ plt.title('Model Performance Comparison')
 plt.ylabel('Score')
 plt.xticks(rotation=0)
 plt.show()
+
 
 
 
