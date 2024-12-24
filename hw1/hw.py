@@ -52,4 +52,41 @@ scaler = StandardScaler()
 X_train_scaled = scaler.fit_transform(X_train)
 X_test_scaled = scaler.transform(X_test)
 
+# 모델 초기화
+lin_reg = LinearRegression()
+tree_reg = DecisionTreeRegressor(random_state=42)
+forest_reg = RandomForestRegressor(n_estimators=100, random_state=42)
+
+# 모델 학습
+lin_reg.fit(X_train_scaled, y_train)
+tree_reg.fit(X_train_scaled, y_train)
+forest_reg.fit(X_train_scaled, y_train)
+
+# 예측
+y_train_pred_lin = lin_reg.predict(X_train_scaled)
+y_test_pred_lin = lin_reg.predict(X_test_scaled)
+
+y_train_pred_tree = tree_reg.predict(X_train_scaled)
+y_test_pred_tree = tree_reg.predict(X_test_scaled)
+
+y_train_pred_forest = forest_reg.predict(X_train_scaled)
+y_test_pred_forest = forest_reg.predict(X_test_scaled)
+
+# 성능 평가
+def evaluate_model(y_true, y_pred):
+    mae = mean_absolute_error(y_true, y_pred)
+    mse = mean_squared_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    return mae, mse, r2
+
+metrics = {
+    'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
+    'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
+    'Random Forest': evaluate_model(y_test, y_test_pred_forest)
+}
+
+# 성능 지표 출력
+for model_name, (mae, mse, r2) in metrics.items():
+    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
+
 
