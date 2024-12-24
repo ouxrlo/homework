@@ -4,7 +4,12 @@
 # conda install pandas numpy xgboost scikit-learn matplotlib seaborn
 
 # 성능 평가 함수 정의
-# 성능 평가 함수 정의
+def evaluate_model(y_true, y_pred):
+    mae = mean_absolute_error(y_true, y_pred)
+    mse = mean_squared_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    return mae, mse, r2
+
 # 라이브러리 임포트
 import pandas as pd
 import numpy as np
@@ -13,17 +18,10 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
-import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-# 성능 평가 함수 정의
-def evaluate_model(y_true, y_pred):
-    mae = mean_absolute_error(y_true, y_pred)
-    mse = mean_squared_error(y_true, y_pred)
-    r2 = r2_score(y_true, y_pred)
-    return mae, mse, r2
+from xgboost import XGBRegressor  # XGBoost 모델 추가
 
 # 데이터 로드
 file_path = '/Users/t2023-m0093/Desktop/homework/hw1/housingdata.csv'
@@ -74,9 +72,7 @@ X_test_scaled = scaler.transform(X_test)
 lin_reg = LinearRegression()
 tree_reg = DecisionTreeRegressor(random_state=42)
 forest_reg = RandomForestRegressor(n_estimators=100, random_state=42)
-
-# XGBoost 모델 초기화
-xg_reg = xgb.XGBRegressor(objective='reg:squarederror', random_state=42)
+xg_reg = XGBRegressor(random_state=42)  # XGBoost 모델 초기화
 
 # 하이퍼파라미터 튜닝을 위한 그리드 서치 설정 (Random Forest 모델)
 param_grid = {
@@ -86,7 +82,7 @@ param_grid = {
     'min_samples_leaf': [1, 2, 4]  # 리프 노드에서 최소 샘플 수
 }
 
-# 그리드 서치를 통해 하이퍼파라미터 최적화
+# 그리드 서치로 모델 최적화 (교차 검증 사용)
 grid_search = GridSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error')
 grid_search.fit(X_train_scaled, y_train)
 
@@ -95,30 +91,38 @@ print("Best Parameters:", grid_search.best_params_)
 
 # 최적화된 모델로 예측
 best_forest_reg = grid_search.best_estimator_
+
+# 예측
 y_train_pred_forest = best_forest_reg.predict(X_train_scaled)
 y_test_pred_forest = best_forest_reg.predict(X_test_scaled)
 
-# XGBoost 하이퍼파라미터 튜닝 (GridSearchCV)
-xgb_param_grid = {
-    'n_estimators': [100, 200, 300],
-    'max_depth': [3, 6, 10],
-    'learning_rate': [0.01, 0.1, 0.2],
-    'subsample': [0.8, 1.0],
-    'colsample_bytree': [0.8, 1.0]
-}
+# 성능 평가 함수 정의
+def evaluate_model(y_true, y_pred):
+    mae = mean_absolute_error(y_true, y_pred)
+    mse = mean_squared_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    return mae, mse, r2
 
-xgb_grid_search = GridSearchCV(xg_reg, xgb_param_grid, cv=5, scoring='neg_mean_squared_error')
-xgb_grid_search.fit(X_train_scaled, y_train)
+# 모델 학습
+lin_reg.fit(X_train_scaled, y_train)
+tree_reg.fit(X_train_scaled, y_train)
+forest_reg.fit(X_train_scaled, y_train)
+xg_reg.fit(X_train_scaled, y_train)  # XGBoost 모델 학습
 
-# 최적의 XGBoost 파라미터 출력
-print("XGBoost Best Parameters:", xgb_grid_search.best_params_)
+# 예측 (각 모델에 대해 예측값 계산)
+y_train_pred_lin = lin_reg.predict(X_train_scaled)
+y_test_pred_lin = lin_reg.predict(X_test_scaled)
 
-# 최적화된 XGBoost 모델로 예측
-best_xg_reg = xgb_grid_search.best_estimator_
-y_train_pred_xg = best_xg_reg.predict(X_train_scaled)
-y_test_pred_xg = best_xg_reg.predict(X_test_scaled)
+y_train_pred_tree = tree_reg.predict(X_train_scaled)
+y_test_pred_tree = tree_reg.predict(X_test_scaled)
 
-# 성능 평가 함수
+y_train_pred_forest = forest_reg.predict(X_train_scaled)
+y_test_pred_forest = forest_reg.predict(X_test_scaled)
+
+y_train_pred_xg = xg_reg.predict(X_train_scaled)
+y_test_pred_xg = xg_reg.predict(X_test_scaled)
+
+# 성능 평가
 metrics = {
     'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
     'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
@@ -140,21 +144,6 @@ plt.title('Model Performance Comparison')
 plt.ylabel('Score')
 plt.xticks(rotation=0)
 plt.show()
-
-# 모델 학습
-lin_reg.fit(X_train_scaled, y_train)
-tree_reg.fit(X_train_scaled, y_train)
-forest_reg.fit(X_train_scaled, y_train)
-
-# 예측
-y_train_pred_lin = lin_reg.predict(X_train_scaled)
-y_test_pred_lin = lin_reg.predict(X_test_scaled)
-
-y_train_pred_tree = tree_reg.predict(X_train_scaled)
-y_test_pred_tree = tree_reg.predict(X_test_scaled)
-
-y_train_pred_forest = forest_reg.predict(X_train_scaled)
-y_test_pred_forest = forest_reg.predict(X_test_scaled)
 
 # Random Forest 모델에서 특성 중요도 추출
 feature_importances = best_forest_reg.feature_importances_
@@ -181,6 +170,7 @@ plt.ylabel('Predicted Prices')
 plt.title('Actual vs Predicted Prices - Random Forest')
 plt.legend()
 plt.show()
+
 
 
 
