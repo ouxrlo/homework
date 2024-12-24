@@ -5,16 +5,6 @@
 
 # 성능 평가 함수 정의
 # 성능 평가 함수 정의
-from sklearn.model_selection import GridSearchCV
-from sklearn.ensemble import RandomForestRegressor
-
-# 성능 평가 함수 정의
-def evaluate_model(y_true, y_pred):
-    mae = mean_absolute_error(y_true, y_pred)
-    mse = mean_squared_error(y_true, y_pred)
-    r2 = r2_score(y_true, y_pred)
-    return mae, mse, r2
-
 # 라이브러리 임포트
 import pandas as pd
 import numpy as np
@@ -23,9 +13,17 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.ensemble import RandomForestRegressor
+import xgboost as xgb
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+# 성능 평가 함수 정의
+def evaluate_model(y_true, y_pred):
+    mae = mean_absolute_error(y_true, y_pred)
+    mse = mean_squared_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    return mae, mse, r2
 
 # 데이터 로드
 file_path = '/Users/t2023-m0093/Desktop/homework/hw1/housingdata.csv'
@@ -77,6 +75,9 @@ lin_reg = LinearRegression()
 tree_reg = DecisionTreeRegressor(random_state=42)
 forest_reg = RandomForestRegressor(n_estimators=100, random_state=42)
 
+# XGBoost 모델 초기화
+xg_reg = xgb.XGBRegressor(objective='reg:squarederror', random_state=42)
+
 # 하이퍼파라미터 튜닝을 위한 그리드 서치 설정 (Random Forest 모델)
 param_grid = {
     'n_estimators': [100, 200, 300],  # 트리의 개수
@@ -97,14 +98,48 @@ best_forest_reg = grid_search.best_estimator_
 y_train_pred_forest = best_forest_reg.predict(X_train_scaled)
 y_test_pred_forest = best_forest_reg.predict(X_test_scaled)
 
-# 성능 평가
+# XGBoost 하이퍼파라미터 튜닝 (GridSearchCV)
+xgb_param_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [3, 6, 10],
+    'learning_rate': [0.01, 0.1, 0.2],
+    'subsample': [0.8, 1.0],
+    'colsample_bytree': [0.8, 1.0]
+}
+
+xgb_grid_search = GridSearchCV(xg_reg, xgb_param_grid, cv=5, scoring='neg_mean_squared_error')
+xgb_grid_search.fit(X_train_scaled, y_train)
+
+# 최적의 XGBoost 파라미터 출력
+print("XGBoost Best Parameters:", xgb_grid_search.best_params_)
+
+# 최적화된 XGBoost 모델로 예측
+best_xg_reg = xgb_grid_search.best_estimator_
+y_train_pred_xg = best_xg_reg.predict(X_train_scaled)
+y_test_pred_xg = best_xg_reg.predict(X_test_scaled)
+
+# 성능 평가 함수
 metrics = {
-    'Random Forest (Optimized)': evaluate_model(y_test, y_test_pred_forest)
+    'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
+    'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
+    'Random Forest': evaluate_model(y_test, y_test_pred_forest),
+    'XGBoost': evaluate_model(y_test, y_test_pred_xg)
 }
 
 # 성능 지표 출력
 for model_name, (mae, mse, r2) in metrics.items():
     print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
+
+# 성능 지표를 데이터프레임으로 정리
+metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
+
+# 성능 비교 시각화
+plt.figure(figsize=(12, 6))
+metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
+plt.title('Model Performance Comparison')
+plt.ylabel('Score')
+plt.xticks(rotation=0)
+plt.show()
 
 # 모델 학습
 lin_reg.fit(X_train_scaled, y_train)
@@ -147,27 +182,6 @@ plt.title('Actual vs Predicted Prices - Random Forest')
 plt.legend()
 plt.show()
 
-# 성능 평가
-metrics = {
-    'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
-    'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
-    'Random Forest': evaluate_model(y_test, y_test_pred_forest)
-}
-
-# 성능 지표 출력
-for model_name, (mae, mse, r2) in metrics.items():
-    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
-
-# 성능 지표를 데이터프레임으로 정리
-metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
-
-# 성능 비교 시각화
-plt.figure(figsize=(12, 6))
-metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
-plt.title('Model Performance Comparison')
-plt.ylabel('Score')
-plt.xticks(rotation=0)
-plt.show()
 
 
 
