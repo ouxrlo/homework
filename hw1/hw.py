@@ -5,6 +5,10 @@
 
 # 성능 평가 함수 정의
 # 성능 평가 함수 정의
+from sklearn.model_selection import GridSearchCV
+from sklearn.ensemble import RandomForestRegressor
+
+# 성능 평가 함수 정의
 def evaluate_model(y_true, y_pred):
     mae = mean_absolute_error(y_true, y_pred)
     mse = mean_squared_error(y_true, y_pred)
@@ -81,7 +85,7 @@ param_grid = {
     'min_samples_leaf': [1, 2, 4]  # 리프 노드에서 최소 샘플 수
 }
 
-# 그리드 서치로 모델 최적화 (교차 검증 사용)
+# 그리드 서치를 통해 하이퍼파라미터 최적화
 grid_search = GridSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error')
 grid_search.fit(X_train_scaled, y_train)
 
@@ -90,8 +94,6 @@ print("Best Parameters:", grid_search.best_params_)
 
 # 최적화된 모델로 예측
 best_forest_reg = grid_search.best_estimator_
-
-# 예측
 y_train_pred_forest = best_forest_reg.predict(X_train_scaled)
 y_test_pred_forest = best_forest_reg.predict(X_test_scaled)
 
@@ -166,6 +168,7 @@ plt.title('Model Performance Comparison')
 plt.ylabel('Score')
 plt.xticks(rotation=0)
 plt.show()
+
 
 
 
