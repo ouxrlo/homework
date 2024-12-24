@@ -1,9 +1,10 @@
+
 # 가상환경 설정
 # conda create --name myenv38 python=3.8
 # conda activate myenv38
 # conda install pandas numpy xgboost scikit-learn matplotlib seaborn
 
-# 성능 평가 함수 정의
+
 # 라이브러리 임포트
 import pandas as pd
 import numpy as np
@@ -130,13 +131,13 @@ importance_df = pd.DataFrame({
 }).sort_values(by='Importance', ascending=False)
 
 # 특성 중요도 시각화
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 6))  # figsize 수정
 sns.barplot(x='Importance', y='Feature', data=importance_df)
 plt.title('Feature Importance - Random Forest')
 plt.show()
 
 # 예측값과 실제값 비교 시각화 (Random Forest)
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 6))  # figsize 수정
 plt.scatter(y_test, y_test_pred_forest, color='blue', label='Predicted', alpha=0.5)
 plt.scatter(y_test, y_test, color='red', label='Actual', alpha=0.5)
 plt.xlabel('Actual Prices')
@@ -160,7 +161,13 @@ for model_name, (mae, mse, r2) in metrics.items():
 metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
 
 # 성능 비교 시각화
-plt.figure(figsi
+plt.figure(figsize=(12, 6))  # figsize 수정
+metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
+plt.title('Model Performance Comparison')
+plt.ylabel('Score')
+plt.xticks(rotation=0)
+plt.show()
+
 
 
 
