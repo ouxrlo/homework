@@ -100,3 +100,29 @@ plt.ylabel('Score')
 plt.xticks(rotation=0)
 plt.show()
 
+# Random Forest 모델에서 특성 중요도 추출
+feature_importances = forest_reg.feature_importances_
+
+# 중요도를 데이터프레임으로 변환
+features = X.columns
+importance_df = pd.DataFrame({
+    'Feature': features,
+    'Importance': feature_importances
+}).sort_values(by='Importance', ascending=False)
+
+# 특성 중요도 시각화
+plt.figure(figsize=(10, 6))
+sns.barplot(x='Importance', y='Feature', data=importance_df)
+plt.title('Feature Importance - Random Forest')
+plt.show()
+
+# 예측값과 실제값 비교 시각화 (Random Forest)
+plt.figure(figsize=(10, 6))
+plt.scatter(y_test, y_test_pred_forest, color='blue', label='Predicted', alpha=0.5)
+plt.scatter(y_test, y_test, color='red', label='Actual', alpha=0.5)
+plt.xlabel('Actual Prices')
+plt.ylabel('Predicted Prices')
+plt.title('Actual vs Predicted Prices - Random Forest')
+plt.legend()
+plt.show()
+
