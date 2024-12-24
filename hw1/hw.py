@@ -5,6 +5,7 @@
 
 # 성능 평가 함수 정의
 # 라이브러리 임포트
+# 라이브러리 임포트
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -40,6 +41,7 @@ file_path = '/Users/t2023-m0093/Desktop/homework/hw1/housingdata.csv'
 housing_data = pd.read_csv(file_path)
 
 # 데이터 확인 (상위 5개 행과 기본 정보)
+print("Original Data Shape:", housing_data.shape)
 print(housing_data.head())
 print(housing_data.info())
 print(housing_data.describe())
@@ -53,16 +55,17 @@ numeric_columns = housing_data.select_dtypes(include=[np.number]).columns
 
 # IQR 방법을 사용하여 이상치 제거
 housing_data_iqr = remove_outliers_iqr(housing_data, numeric_columns)
-print(f"데이터 크기(IQR 방법 후): {housing_data_iqr.shape}")
+print(f"Data Shape After IQR Outlier Removal: {housing_data_iqr.shape}")
 
 # Z-Score 방법을 사용하여 이상치 제거
 housing_data_zscore = remove_outliers_zscore(housing_data_iqr, numeric_columns)
-print(f"데이터 크기(Z-Score 방법 후): {housing_data_zscore.shape}")
+print(f"Data Shape After Z-Score Outlier Removal: {housing_data_zscore.shape}")
 
 # 이상치가 제거된 데이터로 후속 작업 진행
 housing_data = housing_data_zscore
 
 # 데이터 확인 (상위 5개 행과 기본 정보)
+print("Data Shape After Outlier Removal:", housing_data.shape)
 print(housing_data.head())
 print(housing_data.info())
 print(housing_data.describe())
@@ -85,7 +88,8 @@ X = housing_data[['RM', 'LSTAT', 'PTRATIO', 'AGE', 'RM_LSTAT', 'AGE_SQ']]
 y = housing_data['MEDV']
 
 # 데이터 분할: 훈련 데이터(80%)와 테스트 데이터(20%)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+# 만약 데이터셋이 너무 작다면, test_size를 0.1로 변경
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
 
 # 데이터 스케일링 (StandardScaler 사용)
 scaler = StandardScaler()
@@ -197,6 +201,7 @@ plt.title('Model Performance Comparison')
 plt.ylabel('Score')
 plt.xticks(rotation=0)
 plt.show()
+
 
 
 
