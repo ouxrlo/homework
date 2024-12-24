@@ -64,6 +64,44 @@ lin_reg = LinearRegression()
 tree_reg = DecisionTreeRegressor(random_state=42)
 forest_reg = RandomForestRegressor(n_estimators=100, random_state=42)
 
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import GridSearchCV
+
+# 모델 초기화
+forest_reg = RandomForestRegressor(n_estimators=100, random_state=42)
+
+# 하이퍼파라미터 튜닝을 위한 그리드 서치 설정
+param_grid = {
+    'n_estimators': [100, 200, 300],  # 트리의 개수
+    'max_depth': [10, 20, None],  # 트리 깊이
+    'min_samples_split': [2, 5, 10],  # 분할을 위한 최소 샘플 수
+    'min_samples_leaf': [1, 2, 4]  # 리프 노드에서 최소 샘플 수
+}
+
+# 그리드 서치로 모델 최적화
+grid_search = GridSearchCV(forest_reg, param_grid, cv=5, scoring='neg_mean_squared_error')
+grid_search.fit(X_train_scaled, y_train)
+
+# 최적의 파라미터 출력
+print("Best Parameters:", grid_search.best_params_)
+
+# 최적화된 모델을 사용하여 예측
+best_forest_reg = grid_search.best_estimator_
+
+# 예측
+y_train_pred_forest = best_forest_reg.predict(X_train_scaled)
+y_test_pred_forest = best_forest_reg.predict(X_test_scaled)
+
+# 성능 평가
+metrics = {
+    'Random Forest (Optimized)': evaluate_model(y_test, y_test_pred_forest)
+}
+
+# 성능 지표 출력
+for model_name, (mae, mse, r2) in metrics.items():
+    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
+
+
 # 모델 학습
 lin_reg.fit(X_train_scaled, y_train)
 tree_reg.fit(X_train_scaled, y_train)
