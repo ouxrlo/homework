@@ -127,3 +127,27 @@ df_monthly = df.groupby('Year').agg({'Spending Score (1-100)': 'mean'}).reset_in
 
 # 결측값 처리 (필요 시): Prophet 모델은 결측값을 처리해야 하므로 결측값을 제거
 df_monthly = df_monthly.dropna()  # 결측값이 있는 행 제거
+
+# 데이터가 충분한지 확인 (2개 이상의 유효한 행이 있어야 모델을 학습할 수 있음)
+if df_monthly.shape[0] < 2:
+    print("데이터에 충분한 유효한 행이 없습니다.")
+else:
+    # Prophet에 맞게 데이터 포맷 변경
+    df_prophet = df_monthly.rename(columns={'Year': 'ds', 'Spending Score (1-100)': 'y'})
+
+    # Prophet 모델 생성 및 학습
+    model = Prophet(yearly_seasonality=True)  # 연도별 계절성 추가
+    model.fit(df_prophet)
+
+    # 미래 데이터 예측 (2021년부터 2025년까지)
+    future = model.make_future_dataframe(df_prophet, periods=5, freq='Y')
+
+    # 예측
+    forecast = model.predict(future)
+
+    # 예측 결과 시각화
+    model.plot(forecast)
+    plt.title('Spending Score Prediction Over Time')
+    plt.xlabel('Year')
+    plt.ylabel('Spending Score (1-100)')
+    plt.show()
