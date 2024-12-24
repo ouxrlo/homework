@@ -4,6 +4,7 @@
 # conda install pandas numpy xgboost scikit-learn matplotlib seaborn
 
 # 성능 평가 함수 정의
+# 성능 평가 함수 정의
 def evaluate_model(y_true, y_pred):
     mae = mean_absolute_error(y_true, y_pred)
     mse = mean_squared_error(y_true, y_pred)
@@ -94,13 +95,6 @@ best_forest_reg = grid_search.best_estimator_
 y_train_pred_forest = best_forest_reg.predict(X_train_scaled)
 y_test_pred_forest = best_forest_reg.predict(X_test_scaled)
 
-# 성능 평가 함수 정의
-def evaluate_model(y_true, y_pred):
-    mae = mean_absolute_error(y_true, y_pred)
-    mse = mean_squared_error(y_true, y_pred)
-    r2 = r2_score(y_true, y_pred)
-    return mae, mse, r2
-
 # 성능 평가
 metrics = {
     'Random Forest (Optimized)': evaluate_model(y_test, y_test_pred_forest)
@@ -124,28 +118,6 @@ y_test_pred_tree = tree_reg.predict(X_test_scaled)
 
 y_train_pred_forest = forest_reg.predict(X_train_scaled)
 y_test_pred_forest = forest_reg.predict(X_test_scaled)
-
-# 성능 평가
-metrics = {
-    'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
-    'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
-    'Random Forest': evaluate_model(y_test, y_test_pred_forest)
-}
-
-# 성능 지표 출력
-for model_name, (mae, mse, r2) in metrics.items():
-    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
-
-# 성능 지표를 데이터프레임으로 정리
-metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
-
-# 성능 비교 시각화
-plt.figure(figsize=(12, 6))
-metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
-plt.title('Model Performance Comparison')
-plt.ylabel('Score')
-plt.xticks(rotation=0)
-plt.show()
 
 # Random Forest 모델에서 특성 중요도 추출
 feature_importances = best_forest_reg.feature_importances_
@@ -172,5 +144,30 @@ plt.ylabel('Predicted Prices')
 plt.title('Actual vs Predicted Prices - Random Forest')
 plt.legend()
 plt.show()
+
+# 성능 평가
+metrics = {
+    'Linear Regression': evaluate_model(y_test, y_test_pred_lin),
+    'Decision Tree': evaluate_model(y_test, y_test_pred_tree),
+    'Random Forest': evaluate_model(y_test, y_test_pred_forest)
+}
+
+# 성능 지표 출력
+for model_name, (mae, mse, r2) in metrics.items():
+    print(f'{model_name} - MAE: {mae}, MSE: {mse}, R²: {r2}')
+
+# 성능 지표를 데이터프레임으로 정리
+metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
+
+# 성능 비교 시각화
+plt.figure(figsize=(12, 6))
+metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
+plt.title('Model Performance Comparison')
+plt.ylabel('Score')
+plt.xticks(rotation=0)
+plt.show()
+
+
+
 
 
