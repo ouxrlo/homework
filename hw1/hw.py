@@ -5,7 +5,6 @@
 
 # 성능 평가 함수 정의
 # 라이브러리 임포트
-# 라이브러리 임포트
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -161,12 +160,8 @@ for model_name, (mae, mse, r2) in metrics.items():
 metrics_df = pd.DataFrame(metrics, index=['MAE', 'MSE', 'R²'])
 
 # 성능 비교 시각화
-plt.figure(figsize=(12, 6))
-metrics_df.T.plot(kind='bar', figsize=(10, 6), colormap='viridis')
-plt.title('Model Performance Comparison')
-plt.ylabel('Score')
-plt.xticks(rotation=0)
-plt.show()
+plt.figure(figsi
+
 
 
 
