@@ -10,7 +10,8 @@ from sklearn.mixture import GaussianMixture
 from prophet import Prophet
 
 # 데이터 로딩 
-file_path = '/Users/t2023-m0093/Desktop/hw_2/Mall_Customers.csv'
+file_path = '/Users/t2023-m0093/Desktop/homework/hw2/Mall_Customers.csv'
+
 df = pd.read_csv(file_path)
 
 # 데이터 탐색: 처음 5개의 행을 출력하여 데이터 구조 확인
