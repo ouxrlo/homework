@@ -3,6 +3,14 @@
 # conda activate myenv38
 # conda install pandas numpy xgboost scikit-learn matplotlib seaborn
 
+# 성능 평가 함수 정의
+def evaluate_model(y_true, y_pred):
+    mae = mean_absolute_error(y_true, y_pred)
+    mse = mean_squared_error(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
+    return mae, mse, r2
+
+# 라이브러리 임포트
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split, GridSearchCV
