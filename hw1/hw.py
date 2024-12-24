@@ -23,3 +23,33 @@ print(housing_data.head())
 print(housing_data.info())
 print(housing_data.describe())
 
+# 결측치 확인 및 제거
+print(housing_data.isnull().sum())
+housing_data = housing_data.dropna()
+
+# 이상치 탐지 및 제거
+plt.figure(figsize=(10, 6))
+sns.boxplot(data=housing_data, x='RM')
+plt.title('RM Boxplot')
+plt.show()
+
+# RM 열의 이상치 제거 (임의의 기준 설정)
+Q1 = housing_data['RM'].quantile(0.25)
+Q3 = housing_data['RM'].quantile(0.75)
+IQR = Q3 - Q1
+rm_outliers = housing_data[(housing_data['RM'] < (Q1 - 1.5 * IQR)) | (housing_data['RM'] > (Q3 + 1.5 * IQR))]
+housing_data = housing_data.drop(rm_outliers.index)
+
+# 특징과 타겟 변수 분리
+X = housing_data[['RM', 'LSTAT', 'PTRATIO', 'AGE']]
+y = housing_data['MEDV']
+
+# 데이터 분할
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 데이터 스케일링
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+
