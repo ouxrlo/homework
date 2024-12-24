@@ -44,3 +44,65 @@ for i in range(1, 11):  # 1부터 10까지 K값에 대해 반복
     kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=500, n_init=20, random_state=0)
     kmeans.fit(scaled_data)
     wcss.append(kmeans.inertia_)  # 각 K값에 대한 WCSS 계산
+
+    # 엘보우 그래프 시각화: WCSS를 통해 최적의 K값을 시각적으로 찾기
+plt.plot(range(1, 11), wcss)
+plt.title('Elbow Method')
+plt.xlabel('Number of Clusters')
+plt.ylabel('WCSS')
+plt.show()
+
+# 실루엣 점수를 통한 클러스터 수 평가
+silhouette_scores = []  # 실루엣 점수를 저장할 리스트
+for i in range(2, 11):  # 2부터 10까지 클러스터 수를 평가
+    kmeans = KMeans(n_clusters=i, init='k-means++', max_iter=500, n_init=20, random_state=0)
+    y_kmeans = kmeans.fit_predict(scaled_data)
+    silhouette_avg = silhouette_score(scaled_data, y_kmeans)  # 실루엣 점수 계산
+    silhouette_scores.append(silhouette_avg)
+
+# 실루엣 점수 그래프 시각화: 클러스터 수에 따른 실루엣 점수를 시각적으로 확인
+plt.plot(range(2, 11), silhouette_scores)
+plt.title('Silhouette Scores for Different K')
+plt.xlabel('Number of Clusters')
+plt.ylabel('Silhouette Score')
+plt.show()
+
+# PCA로 차원 축소 후 시각화 (2D): 데이터의 차원을 2차원으로 축소하여 군집화 결과를 시각화
+pca = PCA(n_components=2)  # PCA 객체 생성 (2차원으로 축소)
+principalComponents = pca.fit_transform(scaled_data)  # 차원 축소 수행
+
+# K-means 결과 시각화: 각 군집을 다른 색으로 표시
+plt.figure(figsize=(8,6))
+plt.scatter(principalComponents[y_kmeans == 0, 0], principalComponents[y_kmeans == 0, 1], s=100, c='red', label='Cluster 1')
+plt.scatter(principalComponents[y_kmeans == 1, 0], principalComponents[y_kmeans == 1, 1], s=100, c='blue', label='Cluster 2')
+plt.scatter(principalComponents[y_kmeans == 2, 0], principalComponents[y_kmeans == 2, 1], s=100, c='green', label='Cluster 3')
+plt.scatter(principalComponents[y_kmeans == 3, 0], principalComponents[y_kmeans == 3, 1], s=100, c='cyan', label='Cluster 4')
+plt.scatter(principalComponents[y_kmeans == 4, 0], principalComponents[y_kmeans == 4, 1], s=100, c='magenta', label='Cluster 5')
+plt.title('K-means Clustering Results')
+plt.xlabel('PCA Component 1')
+plt.ylabel('PCA Component 2')
+plt.legend()
+plt.show()
+
+# 계층적 군집화 결과 시각화
+plt.figure(figsize=(8,6))
+plt.scatter(principalComponents[y_agg == 0, 0], principalComponents[y_agg == 0, 1], s=100, c='red', label='Cluster 1')
+plt.scatter(principalComponents[y_agg == 1, 0], principalComponents[y_agg == 1, 1], s=100, c='blue', label='Cluster 2')
+plt.scatter(principalComponents[y_agg == 2, 0], principalComponents[y_agg == 2, 1], s=100, c='green', label='Cluster 3')
+plt.scatter(principalComponents[y_agg == 3, 0], principalComponents[y_agg == 3, 1], s=100, c='cyan', label='Cluster 4')
+plt.title('Agglomerative Clustering Results')
+plt.xlabel('PCA Component 1')
+plt.ylabel('PCA Component 2')
+plt.legend()
+plt.show()
+
+# DBSCAN 클러스터링 결과 시각화
+plt.figure(figsize=(8,6))
+plt.scatter(principalComponents[y_dbscan == -1, 0], principalComponents[y_dbscan == -1, 1], s=100, c='grey', label='Noise')
+plt.scatter(principalComponents[y_dbscan == 0, 0], principalComponents[y_dbscan == 0, 1], s=100, c='red', label='Cluster 1')
+plt.scatter(principalComponents[y_dbscan == 1, 0], principalComponents[y_dbscan == 1, 1], s=100, c='blue', label='Cluster 2')
+plt.title('DBSCAN Clustering Results')
+plt.xlabel('PCA Component 1')
+plt.ylabel('PCA Component 2')
+plt.legend()
+plt.show()
