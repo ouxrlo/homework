@@ -10,9 +10,7 @@ import matplotlib.pyplot as plt
 file_path = '/Users/t2023-m0093/Desktop/homework/hw1/housingdata.csv'
 housing_data = pd.read_csv(file_path)
 
-# 주어진 데이터셋에는 날짜 정보가 없으므로, 임의로 'YEAR'와 'SEASON'을 추가합니다.
-# 예시로 'YEAR'를 2024년으로 설정하고, 'SEASON'을 월(MONTH) 기준으로 분류합니다.
-# 실제 데이터에는 연도 정보가 없다면 외부 경제 데이터를 활용하거나 월 기준으로 가정할 수 있습니다.
+# 주어진 데이터셋에는 날짜 정보가 없으므로, 임의로 'YEAR'와 'SEASON'을 추가
 
 # 예시로 연도 컬럼을 추가 (임의로 2024년으로 설정)
 housing_data['YEAR'] = 2024  # 실제 연도에 맞게 수정 필요
